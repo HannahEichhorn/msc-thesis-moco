@@ -51,9 +51,9 @@ def Add_Time(start_time, add_min=5, add_sec=0):
     start_time : str
         Start time of acquisition in format %H%M%S.%f.
     add_min : int, optional
-        Number of minutes to be added to start_time. The default is 5.
+        Number of minutes to be added/subtracted to/from start_time. The default is 5.
     add_sec : int, optional
-        Number of seconds to be added to start_time. The default is 0.
+        Number of seconds to be added/subtracted to/from start_time. The default is 0.
 
     Returns
     -------
@@ -63,6 +63,9 @@ def Add_Time(start_time, add_min=5, add_sec=0):
     
     time_dt = dt.datetime.strptime(start_time, "%H%M%S.%f")
     end_dt = time_dt+dt.timedelta(minutes=add_min, seconds=add_sec)
+    if add_sec < 0 and add_min < 0:
+        end_dt = time_dt-dt.timedelta(minutes=add_min, seconds=add_sec)
+    
     return dt.datetime.strftime(end_dt, "%H%M%S.%f")
 
 
@@ -267,6 +270,10 @@ def FindFrameNr(tim, subj, name, seq_type, dcm_dir=None):
     dcm = glob.glob(dcm_dir+'*'+name+'*/*.IMA')[0]  
     dcm_read = pydicom.dcmread(dcm)
     acqu_time = dcm_read.AcquisitionTime
+    
+    if 'DIFF' in seq_type:
+        # mismatch between acquisition time in TRACE B0 scan and start of whole scan
+        acqu_time = Add_Time(acqu_time, add_min=0, add_sec=-9)
     
     # add time to start of acquisition:
     mins, scs = ScanTimes[seq_type]
